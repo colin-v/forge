@@ -3,6 +3,8 @@ package forge.player;
 import com.google.common.collect.*;
 import forge.LobbyPlayer;
 import forge.StaticData;
+import forge.ai.ComputerUtilAbility;
+import forge.ai.ComputerUtilMana;
 import forge.ai.GameState;
 import forge.ai.PlayerControllerAi;
 import forge.card.*;
@@ -27,6 +29,7 @@ import forge.game.event.GameEventPlayerStatsChanged;
 import forge.game.keyword.Keyword;
 import forge.game.keyword.KeywordInterface;
 import forge.game.mana.Mana;
+import forge.game.phase.PhaseType;
 import forge.game.mana.ManaConversionMatrix;
 import forge.game.mana.ManaCostBeingPaid;
 import forge.game.player.*;
@@ -108,6 +111,13 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
     private final Localizer localizer = Localizer.getInstance();
 
     protected Map<SpellAbilityView, SpellAbility> spellViewCache = null;
+
+    // Cache of card IDs currently playable by the local human. Populated on the
+    // game thread (at each priority window) and read from the render thread for
+    // UI hints (gold border on playable cards). Using a concurrent set so reads
+    // from the render thread are safe without holding any lock.
+    private final java.util.Set<Integer> playableCardIds =
+            java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
 
     public PlayerControllerHuman(final Game game0, final Player p, final LobbyPlayer lp) {
         super(game0, p, lp);
@@ -1546,11 +1556,93 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
             }
         }
 
+        // Recompute the playable-cards cache once per priority window while we
+        // are on the game thread. Downstream UI (gold border) reads it lock-free.
+        final boolean anyPlayable = refreshPlayableCards();
+
+        if (FModel.getPreferences().getPrefBoolean(FPref.UI_SMART_STOPS)) {
+            // Phases where we never auto-skip regardless of legal actions. These are
+            // decision-reveal moments where the player wants to see what the opponent
+            // committed to (attackers, blockers) before priority moves on.
+            final PhaseType phase = getGame().getPhaseHandler().getPhase();
+            final boolean isHardStopPhase = phase == PhaseType.COMBAT_DECLARE_BLOCKERS;
+            if (!isHardStopPhase && stack.isEmpty() && !anyPlayable) {
+                // Empty-stack priority window where the player has no legal action.
+                netLog.trace("Returning null (smartStops: empty stack, no action) for player {}", player.getName());
+                return null;
+            }
+            if (!stack.isEmpty()) {
+                final SpellAbility top = stack.peekAbility();
+                if (top != null && top.getActivatingPlayer() == player) {
+                    // Top of stack is ours — let it resolve rather than prompting. An
+                    // opponent's response would land on top of the stack and re-enter
+                    // this method with the new top owned by them, so we'd stop there.
+                    netLog.trace("Returning null (smartStops: own top of stack) for player {}", player.getName());
+                    return null;
+                }
+            }
+        }
+
         netLog.trace("Creating InputPassPriority for player {}", player.getName());
         final InputPassPriority defaultInput = new InputPassPriority(this);
         defaultInput.showAndWait();
         netLog.trace("InputPassPriority returned for player {}, chosenSa={}", player.getName(), defaultInput.getChosenSa());
         return defaultInput.getChosenSa();
+    }
+
+    /**
+     * Recompute which of the local player's cards are currently playable and
+     * store the IDs in {@link #playableCardIds}. Must be called on the game
+     * thread; the cache is consumed (lock-free) by the render thread for UI
+     * hints. Returns true if at least one playable card was found, so callers
+     * can also use this as the "has any legal action" check for smart stops.
+     */
+    private boolean refreshPlayableCards() {
+        playableCardIds.clear();
+        for (final Card c : ComputerUtilAbility.getAvailableCards(getGame(), player)) {
+            if (isCardPlayableBy(c, player)) {
+                playableCardIds.add(c.getId());
+            }
+        }
+        return !playableCardIds.isEmpty();
+    }
+
+    private static boolean isCardPlayableBy(final Card c, final Player p) {
+        // Called only from the game thread (refreshPlayableCards), so the
+        // underlying Card state isn't being mutated mid-iteration.
+        for (final SpellAbility sa : c.getAllPossibleAbilities(p, true)) {
+            if (sa.isManaAbility()) {
+                continue;
+            }
+            // canPlay() on a land ability doesn't check the per-turn land-play limit.
+            if (sa.isLandAbility() && !p.canPlayLand(c, false, sa)) {
+                continue;
+            }
+            // SpellAbility.canPlay() doesn't verify mana-cost affordability — it
+            // only checks timing, zone, and additional (non-mana) costs.
+            if (!ComputerUtilMana.canPayManaCost(sa, p, 0, false)) {
+                continue;
+            }
+            // Targeted spells with no legal targets would just fizzle. Skip.
+            if (sa.usesTargeting()) {
+                final TargetRestrictions tr = sa.getTargetRestrictions();
+                if (tr != null) {
+                    sa.setActivatingPlayer(p);
+                    if (!tr.hasCandidates(sa)) {
+                        continue;
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isCardPlayable(final CardView cardView) {
+        // Lock-free lookup against the cache populated by refreshPlayableCards.
+        // Safe to call from the render thread.
+        return cardView != null && playableCardIds.contains(cardView.getId());
     }
 
     @Override
@@ -2413,6 +2505,12 @@ public class PlayerControllerHuman extends PlayerController implements IGameCont
             if (passUntilEndOfTurn) {
                 autoPassUntilEndOfTurn();
             }
+            inp.selectButtonOK();
+        } else if (passUntilEndOfTurn && (inp instanceof InputAttack || inp instanceof InputBlock)) {
+            // End Turn pressed during a combat input: commit the current declaration
+            // (empty attackers/blockers is a valid commit) and let auto-pass carry the
+            // rest of the turn through priority windows.
+            autoPassUntilEndOfTurn();
             inp.selectButtonOK();
         } else {
             FThreads.invokeInEdtNowOrLater(() -> {

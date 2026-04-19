@@ -149,6 +149,7 @@ public class ForgePreferences extends PreferencesStore<ForgePreferences.FPref> {
         UI_DISPLAY_CURRENT_COLORS(ForgeConstants.DISP_CURRENT_COLORS_NEVER),
         UI_FILTER_LANDS_BY_COLOR_IDENTITY("true"),
         UI_ALLOW_ESC_TO_END_TURN ("false"),
+        UI_SMART_STOPS ("true"), // Skip priority windows where the player has no legal action (Arena-style)
         UI_ALT_PLAYERINFOLAYOUT ("false"),
         UI_ALT_PLAYERZONETABS ("false"),
         UI_PRESELECT_PREVIOUS_ABILITY_ORDER ("false"),

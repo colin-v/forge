@@ -66,6 +66,7 @@ public class VZoneDisplay extends VCardDisplayArea {
     }
 
     private void setRevealedPanel(int idx) {
+        if (Forge.isLandscapeMode() && !Forge.magnifyShowDetails) return; // reveal XOR magnify in landscape
         if (idx >= 0 && idx < cardPanels.get().size())
             revealedPanel = cardPanels.get().get(idx);
         else

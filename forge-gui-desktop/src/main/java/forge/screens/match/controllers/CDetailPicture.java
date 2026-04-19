@@ -18,6 +18,8 @@ public class CDetailPicture {
     private final IMayViewCards mayView;
 
     private CardView currentView = null;
+    private CardView hoveredView = null; // null means no hover; fall back to defaultView
+    private CardView defaultView = null; // e.g., top of stack
     private boolean isDisplayAlt = false, alwaysDisplayAlt = false;
 
     public CDetailPicture() {
@@ -44,11 +46,32 @@ public class CDetailPicture {
     }
 
     public void showCard(final CardView c, final boolean showAlt) {
-        currentView = c;
-        final boolean mayFlip = mayView() && mayFlip();
-        isDisplayAlt = mayFlip && showAlt;
-        alwaysDisplayAlt = mayFlip && c.isFaceDown();
+        hoveredView = c;
+        applyCurrentView(showAlt);
+    }
 
+    /**
+     * Set the card shown when nothing is hovered (typically the top of the stack).
+     * Pass null to clear it. The UI refreshes immediately if no hover is active.
+     */
+    public void setDefaultCard(final CardView c) {
+        defaultView = c;
+        if (hoveredView == null) {
+            applyCurrentView(false);
+        }
+    }
+
+    private void applyCurrentView(final boolean showAlt) {
+        final CardView c = hoveredView != null ? hoveredView : defaultView;
+        currentView = c;
+        if (c == null) {
+            isDisplayAlt = false;
+            alwaysDisplayAlt = false;
+        } else {
+            final boolean mayFlip = mayView() && mayFlip();
+            isDisplayAlt = mayFlip && showAlt;
+            alwaysDisplayAlt = mayFlip && c.isFaceDown();
+        }
         update();
     }
 

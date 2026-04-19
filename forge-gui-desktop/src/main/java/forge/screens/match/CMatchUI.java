@@ -867,7 +867,11 @@ public final class CMatchUI
 
     @Override
     public void updateStack() {
-        FThreads.invokeInEdtNowOrLater(() -> getCStack().update());
+        FThreads.invokeInEdtNowOrLater(() -> {
+            getCStack().update();
+            final StackItemView top = getGameView() != null ? getGameView().peekStack() : null;
+            cDetailPicture.setDefaultCard(top != null ? top.getSourceCard() : null);
+        });
     }
 
     /**

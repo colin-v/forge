@@ -94,6 +94,13 @@ public class FCardPanel extends FDisplayObject {
         return PADDING;
     }
 
+    private boolean isPlayableNow() {
+        return card != null
+                && MatchController.instance != null
+                && MatchController.instance.getGameController() != null
+                && MatchController.instance.getGameController().isCardPlayable(card);
+    }
+
     //allow overriding stack position
     protected CardStackPosition getStackPosition() {
         return CardStackPosition.Top;
@@ -172,6 +179,8 @@ public class FCardPanel extends FDisplayObject {
             CardRenderer.drawCardWithOverlays(g, card, x, y, w, h, getStackPosition());
             if (Forge.hasGamepad() && isHovered())
                 g.drawRect(3f, Color.LIME, x, y, w, h);
+            else if (isPlayableNow())
+                g.drawRect(3f, Color.GOLD, x, y, w, h);
         }
         if (tapped) {
             g.endTransform();

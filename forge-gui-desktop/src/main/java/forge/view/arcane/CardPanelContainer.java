@@ -259,6 +259,10 @@ public abstract class CardPanelContainer extends SkinnedPanel {
         this.hoveredPanel.setSelected(false);
         this.mouseOut(this.hoveredPanel, evt);
         this.hoveredPanel = null;
+        // Clear the hover in the detail pane so it falls back to the default card
+        // (top of stack). mouseMoved immediately re-sets the card if another panel
+        // is entered, so this does not cause flicker within a container.
+        matchUI.setCard((CardView) null);
     }
 
     protected abstract CardPanel getCardPanel(int x, int y);

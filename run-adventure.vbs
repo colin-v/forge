@@ -1,0 +1,1 @@
+CreateObject("Wscript.Shell").Run "run-adventure.bat", 0, True

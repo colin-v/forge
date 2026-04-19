@@ -106,6 +106,7 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
     private final JCheckBox cbPauseWhileMinimized = new OptionsCheckBox(localizer.getMessage("cbPauseWhileMinimized"));
     private final JCheckBox cbCompactPrompt = new OptionsCheckBox(localizer.getMessage("cbCompactPrompt"));
     private final JCheckBox cbEscapeEndsTurn = new OptionsCheckBox(localizer.getMessage("cbEscapeEndsTurn"));
+    private final JCheckBox cbSmartStops = new OptionsCheckBox(localizer.getMessage("cbSmartStops"));
     private final JCheckBox cbPreselectPrevAbOrder = new OptionsCheckBox(localizer.getMessage("cbPreselectPrevAbOrder"));
     private final JCheckBox cbHideReminderText = new OptionsCheckBox(localizer.getMessage("cbHideReminderText"));
     private final JCheckBox cbCardTextUseSansSerif = new OptionsCheckBox(localizer.getMessage("cbCardTextUseSansSerif"));
@@ -280,6 +281,9 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
 
         pnlPrefs.add(cbEscapeEndsTurn, titleConstraints);
         pnlPrefs.add(new NoteLabel(localizer.getMessage("nlEscapeEndsTurn")), descriptionConstraints);
+
+        pnlPrefs.add(cbSmartStops, titleConstraints);
+        pnlPrefs.add(new NoteLabel(localizer.getMessage("nlSmartStops")), descriptionConstraints);
 
         pnlPrefs.add(cbDetailedPaymentDesc, titleConstraints);
         pnlPrefs.add(new NoteLabel(localizer.getMessage("nlDetailedPaymentDesc")), descriptionConstraints);
@@ -987,6 +991,10 @@ public enum VSubmenuPreferences implements IVSubmenu<CSubmenuPreferences> {
 
     public final JCheckBox getCbEscapeEndsTurn() {
         return cbEscapeEndsTurn;
+    }
+
+    public final JCheckBox getCbSmartStops() {
+        return cbSmartStops;
     }
 
     public final JCheckBox getCbHideReminderText() {

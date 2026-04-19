@@ -69,4 +69,11 @@ public class HeroListData {
         }
         return ret;
     }
+
+    public String getRawRaceName(int raceIndex) {
+        HeroData[] arr = instance().heroes;
+        int i = raceIndex % arr.length;
+        if (i < 0) i += arr.length;
+        return arr[i].name;
+    }
 }

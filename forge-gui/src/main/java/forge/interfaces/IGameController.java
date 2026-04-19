@@ -66,4 +66,9 @@ public interface IGameController {
     void setShouldAlwaysAcceptTrigger(int trigger);
     void setShouldAlwaysDeclineTrigger(int trigger);
     void setShouldAlwaysAskTrigger(int trigger);
+
+    // True if the local human player currently has a legal, affordable, non-mana
+    // action on this card (spell, ability, land play, etc.). Used to highlight
+    // playable cards in the UI. Returns false for network/watcher clients.
+    default boolean isCardPlayable(CardView cardView) { return false; }
 }

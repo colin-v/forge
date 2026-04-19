@@ -221,6 +221,7 @@ public class NewGameScene extends MenuScene {
         race.setCurrentIndex(rand.nextInt());
         ui.onButtonPress("back", NewGameScene.this::back);
         ui.onButtonPress("start", NewGameScene.this::start);
+        ui.onButtonPress("randomize", NewGameScene.this::randomizeCharacter);
         ui.onButtonPress("leftAvatar", NewGameScene.this::leftAvatar);
         ui.onButtonPress("rightAvatar", NewGameScene.this::rightAvatar);
         difficultyHelp.addListener(new ClickListener() {
@@ -356,6 +357,52 @@ public class NewGameScene extends MenuScene {
     public boolean back() {
         Forge.switchScene(StartScene.instance());
         return true;
+    }
+
+    private boolean randomizeCharacter() {
+        gender.setCurrentIndex(rand.nextInt());
+        race.setCurrentIndex(rand.nextInt());
+        // Lore-appropriate color mapping by raw race name. Falls back to a random
+        // color for unknown races. Kept local to randomize to avoid coupling the
+        // race selector to color elsewhere.
+        int colorIndex = loreColorForRace(HeroListData.instance().getRawRaceName(race.getCurrentIndex()));
+        if (colorIndex < 0) {
+            colorIndex = rand.nextInt();
+        }
+        colorId.setCurrentIndex(colorIndex);
+        generateName();
+        generateAvatar();
+        return true;
+    }
+
+    // W=0, U=1, B=2, R=3, G=4 (matches config.json "colorIds"). Returns -1 if unknown.
+    private static int loreColorForRace(String raceName) {
+        if (raceName == null) return -1;
+        switch (raceName) {
+            case "Human":
+            case "Kor":
+            case "Leonin":
+            case "White Dragon":
+                return 0; // W
+            case "Metathran":
+            case "Blue Dragon":
+                return 1; // U
+            case "Undead":
+            case "Phyrexian":
+            case "Black Dragon":
+                return 2; // B
+            case "Devil":
+            case "Dwarf":
+            case "Viashino":
+            case "Werewolf":
+            case "Red Dragon":
+                return 3; // R
+            case "Elf":
+            case "Green Dragon":
+                return 4; // G
+            default: // Human and anything not mapped
+                return -1;
+        }
     }
 
 
