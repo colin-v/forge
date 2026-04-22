@@ -40,7 +40,7 @@ public class AssetsDownloader {
             return;
         final String versionString = Forge.getDeviceAdapter().getVersionString();
         Forge.getSplashScreen().getProgressBar().setDescription("Checking for updates...");
-        if (versionString.contains("GIT")) {
+        if (BuildInfo.isDevelopmentVersion()) {
             if (!GuiBase.isAndroid()) {
                 run(runnable);
                 return;

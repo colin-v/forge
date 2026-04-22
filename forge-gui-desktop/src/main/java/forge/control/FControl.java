@@ -246,7 +246,8 @@ public enum FControl implements KeyEventDispatcher {
         isSnapshot = currentVersion.contains("SNAPSHOT");
         //get version string
         try {
-            if (isSnapshot && prefs.getPrefBoolean(FPref.CHECK_SNAPSHOT_AT_STARTUP)) {
+            if (isSnapshot && !BuildInfo.isDevelopmentVersion() && prefs.getPrefBoolean(FPref.CHECK_SNAPSHOT_AT_STARTUP)) {
+                // Skipped when running from source — isDevelopmentVersion covers both unpackaged GIT and locally-built SNAPSHOTs.
                 URL url = new URL(GITHUB_SNAPSHOT_URL + "version.txt");
                 snapsVersion = FileUtil.readFileToString(url);
                 url = new URL(GITHUB_SNAPSHOT_URL + "build.txt");

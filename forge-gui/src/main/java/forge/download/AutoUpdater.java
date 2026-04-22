@@ -73,8 +73,8 @@ public class AutoUpdater {
     }
 
     private boolean verifyUpdateable() {
-        if (buildVersion.contains("GIT")) {
-            //return false;
+        if (BuildInfo.isDevelopmentVersion()) {
+            return false;
         }
 
         if (isLoading) {
